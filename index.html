@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#4ec0ca" />
+  <title>Flappy Bird — Web Edition</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <h1>FLAPPY <span>BIRD</span></h1>
+      <p>Tap, click, or press <kbd>Space</kbd> to flap</p>
+    </header>
+
+    <div class="game-shell" id="gameShell">
+      <canvas id="game" width="480" height="720" aria-label="Flappy Bird game"></canvas>
+
+      <div class="overlay" id="overlay">
+        <div class="overlay-card" id="startCard">
+          <div class="logo">FLAPPY <span>BIRD</span></div>
+          <div class="bird-icon" aria-hidden="true">
+            <div class="bird-icon__body"></div>
+            <div class="bird-icon__wing"></div>
+            <div class="bird-icon__eye"></div>
+            <div class="bird-icon__beak"></div>
+          </div>
+          <p class="hint">Tap / click / <kbd>Space</kbd> to flap</p>
+          <p class="hint hint--small">Fly through the pipes. Don't touch anything.</p>
+          <button class="btn" id="startBtn">PLAY NOW</button>
+          <button class="btn btn--ghost" id="leaderboardBtn">🏆 LEADERBOARD</button>
+        </div>
+
+        <div class="overlay-card hidden" id="gameOverCard">
+          <div class="game-over-title">GAME OVER</div>
+          <div class="score-panel">
+            <div class="score-box">
+              <span class="score-label">SCORE</span>
+              <span class="score-value" id="finalScore">0</span>
+            </div>
+            <div class="score-box">
+              <span class="score-label">BEST</span>
+              <span class="score-value" id="bestScore">0</span>
+            </div>
+          </div>
+          <div class="medal" id="medal">★</div>
+          <p class="hint hint--small" id="newBest" hidden>NEW BEST SCORE!</p>
+          <p class="rank-note" id="rankNote" hidden></p>
+          <label class="name-row">
+            <span>PILOT NAME</span>
+            <input id="playerName" type="text" maxlength="12" placeholder="PILOT" autocomplete="off" spellcheck="false" />
+          </label>
+          <button class="btn" id="restartBtn">PLAY AGAIN</button>
+          <button class="btn btn--ghost" id="leaderboardBtn2">🏆 LEADERBOARD</button>
+        </div>
+      </div>
+
+      <div class="overlay modal hidden" id="leaderboardOverlay">
+        <div class="overlay-card board-card">
+          <div class="board-title">TOP PILOTS</div>
+          <div class="board-subtitle">Local high scores · top 10</div>
+          <div class="board-list" id="boardList"></div>
+          <button class="btn" id="closeBoardBtn">CLOSE</button>
+          <button class="board-clear" id="clearBoardBtn">Clear leaderboard</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="controls">
+      <button class="icon-btn" id="soundBtn" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+      <span class="controls__label">Sound</span>
+      <span class="divider"></span>
+      <span class="controls__text">Press <kbd>P</kbd> to pause</span>
+    </footer>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
