@@ -38,6 +38,15 @@
   const inputHint = document.getElementById("inputHint");
   const playHint = document.getElementById("playHint");
   const controlsHint = document.getElementById("controlsHint");
+  const flash = document.getElementById("flash");
+  const hud = document.getElementById("hud");
+  const hudBest = document.getElementById("hudBest");
+  const pauseBtn = document.getElementById("pauseBtn");
+  const pauseOverlay = document.getElementById("pauseOverlay");
+  const resumeBtn = document.getElementById("resumeBtn");
+  const pauseRestartBtn = document.getElementById("pauseRestartBtn");
+  const pauseBoardBtn = document.getElementById("pauseBoardBtn");
+  const announcer = document.getElementById("announcer");
 
   function resizeCanvas() {
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
@@ -54,7 +63,7 @@
   if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) {
     inputHint.textContent = "Tap anywhere to flap";
     playHint.textContent = "Tap to flap";
-    controlsHint.innerHTML = "Tap 🔊 for sound";
+    controlsHint.innerHTML = "Tap ⏸ to pause · 🔊 for sound";
   }
 
   // Pointer Events cover modern browsers; fall back for older iOS/Android WebViews.
@@ -232,11 +241,17 @@
 
       const rank = document.createElement("span");
       rank.className = "board-rank";
-      rank.textContent = String(i + 1);
+      rank.textContent = i === 0 ? "♛" : String(i + 1);
 
       const name = document.createElement("span");
       name.className = "board-name";
       name.textContent = entry.name;
+      if (entry.id === latestEntryId) {
+        const badge = document.createElement("span");
+        badge.className = "you-badge";
+        badge.textContent = "YOU";
+        name.appendChild(badge);
+      }
 
       const scoreEl = document.createElement("span");
       scoreEl.className = "board-score";
@@ -272,6 +287,9 @@
   const bird = { x: BIRD_X, y: 300, vy: 0, rot: 0, wing: 0 };
   let pipes = [];
   let particles = [];
+  let floaters = [];
+  const reduceMotion = window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const clouds = [
     { x: 60, y: 110, s: 1.0, v: 12 },
@@ -287,10 +305,41 @@
   const gapSize = () => 194 - Math.min(score * 2.6, 46);
   const pipeSpacing = () => 228;
 
+  function haptic(pattern) {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  }
+
+  function announce(text) {
+    announcer.textContent = text;
+  }
+
+  function updateHud() {
+    hudBest.textContent = best;
+  }
+
+  function addFloater(text, x, y, size = 22, color = "#fff8dc") {
+    floaters.push({ text, x, y, size, color, life: 0.85, maxLife: 0.85 });
+  }
+
+  function flashScreen() {
+    if (reduceMotion) return;
+    flash.classList.remove("active");
+    void flash.offsetWidth;
+    flash.classList.add("active");
+  }
+
+  function shakeScreen() {
+    if (reduceMotion) return;
+    shell.classList.remove("shake");
+    void shell.offsetWidth;
+    shell.classList.add("shake");
+  }
+
   function reset() {
     score = 0;
     pipes = [];
     particles = [];
+    floaters = [];
     bird.y = 300;
     bird.vy = 0;
     bird.rot = 0;
@@ -328,9 +377,12 @@
   // ---------- Transitions ----------
   function showStart() {
     state = "ready";
+    hud.hidden = true;
+    pauseOverlay.classList.add("hidden");
     overlay.classList.remove("hidden");
     startCard.classList.remove("hidden");
     overCard.classList.add("hidden");
+    announce("Flappy Bird ready. Tap or press Space to start.");
   }
 
   function startGame() {
@@ -338,6 +390,13 @@
     reset();
     state = "playing";
     overlay.classList.add("hidden");
+    pauseOverlay.classList.add("hidden");
+    leaderboardOverlay.classList.add("hidden");
+    hud.hidden = false;
+    pauseBtn.textContent = "⏸";
+    pauseBtn.setAttribute("aria-label", "Pause game");
+    updateHud();
+    announce("Game started. Fly through the pipes.");
     sfx.start();
     flap();
   }
@@ -345,6 +404,9 @@
   function gameOver() {
     state = "dying";
     sfx.hit();
+    haptic([35, 45, 30]);
+    shakeScreen();
+    flashScreen();
     spawnParticles(bird.x, bird.y, 16, "#fff3c4", 1.2);
 
     const isBest = score > best;
@@ -354,7 +416,9 @@
     }
     finalScoreEl.textContent = score;
     bestScoreEl.textContent = best;
+    updateHud();
     newBestEl.hidden = !isBest || score === 0;
+    announce(`Game over. Score ${score}. Best ${best}.`);
 
     let rank = "none", icon = "★";
     if (score >= 40) { rank = "platinum"; icon = "♛"; }
@@ -381,6 +445,7 @@
   function finishDeath() {
     state = "over";
     sfx.die();
+    hud.hidden = true;
     overlay.classList.remove("hidden");
     overCard.classList.remove("hidden");
     startCard.classList.add("hidden");
@@ -392,14 +457,23 @@
     bird.wing = 1;
     spawnParticles(bird.x - 12, bird.y + 8, 5, "#ffffff", 0.45);
     sfx.flap();
+    haptic(8);
   }
 
   function togglePause() {
     if (state === "paused") {
       state = prevState;
+      pauseOverlay.classList.add("hidden");
+      pauseBtn.textContent = "⏸";
+      pauseBtn.setAttribute("aria-label", "Pause game");
+      announce("Game resumed.");
     } else if (state === "playing" || state === "dying") {
       prevState = state;
       state = "paused";
+      pauseOverlay.classList.remove("hidden");
+      pauseBtn.textContent = "▶";
+      pauseBtn.setAttribute("aria-label", "Resume game");
+      announce("Game paused.");
     }
   }
 
@@ -414,6 +488,13 @@
 
   startBtn.addEventListener("click", (e) => { e.stopPropagation(); e.currentTarget.blur(); startGame(); });
   restartBtn.addEventListener("click", (e) => { e.stopPropagation(); e.currentTarget.blur(); startGame(); });
+  pauseBtn.addEventListener("click", (e) => { e.stopPropagation(); e.currentTarget.blur(); togglePause(); });
+  resumeBtn.addEventListener("click", (e) => { e.stopPropagation(); e.currentTarget.blur(); togglePause(); });
+  pauseRestartBtn.addEventListener("click", (e) => { e.stopPropagation(); e.currentTarget.blur(); startGame(); });
+  pauseBoardBtn.addEventListener("click", (e) => { e.stopPropagation(); e.currentTarget.blur(); openBoard(); });
+  onPress(pauseOverlay, (e) => {
+    if (e.target === pauseOverlay) togglePause();
+  });
   for (const btn of [leaderboardBtn, leaderboardBtn2]) {
     btn.addEventListener("click", (e) => { e.stopPropagation(); e.currentTarget.blur(); openBoard(); });
   }
@@ -539,6 +620,14 @@
           p.passed = true;
           score++;
           sfx.score();
+          haptic(15);
+          spawnParticles(bird.x + 20, bird.y, 8, "#fff8b0", 0.55);
+          addFloater("+1", bird.x + 26, bird.y - 20, 22);
+          hudBest.textContent = Math.max(best, score);
+          if (score % 5 === 0) {
+            addFloater(score % 10 === 0 ? `${score} POINTS!` : "NICE FLYING!", W / 2, 150, 28, "#fff3a8");
+            announce(`${score} points!`);
+          }
         }
       }
       pipes = pipes.filter((p) => p.x > -CAP_W - 10);
@@ -584,6 +673,12 @@
       p.y += p.vy * dt;
     }
     particles = particles.filter((p) => p.life > 0);
+
+    for (const f of floaters) {
+      f.life -= dt;
+      f.y -= dt * 34;
+    }
+    floaters = floaters.filter((f) => f.life > 0);
   }
 
   // ---------- Rendering ----------
@@ -803,15 +898,21 @@
     ctx.globalAlpha = 1;
   }
 
-  function drawPaused() {
-    ctx.fillStyle = "rgba(0,0,0,0.45)";
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = "#fff8dc";
-    ctx.font = "900 46px 'Trebuchet MS', sans-serif";
+  function drawFloaters() {
+    ctx.save();
     ctx.textAlign = "center";
-    ctx.fillText("PAUSED", W / 2, H / 2);
-    ctx.font = "bold 18px 'Trebuchet MS', sans-serif";
-    ctx.fillText("Press P to resume", W / 2, H / 2 + 38);
+    ctx.lineJoin = "round";
+    for (const f of floaters) {
+      const progress = f.life / f.maxLife;
+      ctx.globalAlpha = Math.min(1, progress * 2);
+      ctx.font = `900 ${f.size}px 'Trebuchet MS', sans-serif`;
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = "rgba(61,43,31,0.65)";
+      ctx.strokeText(f.text, f.x, f.y);
+      ctx.fillStyle = f.color;
+      ctx.fillText(f.text, f.x, f.y);
+    }
+    ctx.restore();
   }
 
   function render() {
@@ -822,7 +923,7 @@
     if (state !== "ready") drawBird();
     drawParticles();
     drawScore();
-    if (state === "paused") drawPaused();
+    drawFloaters();
   }
 
   // ---------- Loop ----------

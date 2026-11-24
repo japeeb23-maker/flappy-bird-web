@@ -23,6 +23,12 @@
 
     <div class="game-shell" id="gameShell">
       <canvas id="game" width="480" height="720" aria-label="Flappy Bird game"></canvas>
+      <div class="flash" id="flash" aria-hidden="true"></div>
+
+      <div class="hud" id="hud" hidden>
+        <div class="hud__chip"><span>BEST</span><b id="hudBest">0</b></div>
+        <button class="hud__pause" id="pauseBtn" aria-label="Pause game" title="Pause">⏸</button>
+      </div>
 
       <div class="overlay" id="overlay">
         <div class="overlay-card" id="startCard">
@@ -34,7 +40,11 @@
             <div class="bird-icon__beak"></div>
           </div>
           <p class="hint" id="playHint">Tap / click / <kbd>Space</kbd> to flap</p>
-          <p class="hint hint--small">Fly through the pipes. Don't touch anything.</p>
+          <div class="howto" aria-label="How to play">
+            <span>👆 Flap</span>
+            <span>🟩 Dodge</span>
+            <span>🏆 Score</span>
+          </div>
           <button class="btn" id="startBtn">PLAY NOW</button>
           <button class="btn btn--ghost" id="leaderboardBtn">🏆 LEADERBOARD</button>
         </div>
@@ -63,6 +73,16 @@
         </div>
       </div>
 
+      <div class="overlay modal pause-modal hidden" id="pauseOverlay">
+        <div class="overlay-card pause-card">
+          <div class="pause-title">PAUSED</div>
+          <p class="hint hint--small">Take a breather, pilot.</p>
+          <button class="btn" id="resumeBtn">RESUME</button>
+          <button class="btn btn--ghost" id="pauseRestartBtn">RESTART</button>
+          <button class="btn btn--ghost" id="pauseBoardBtn">🏆 LEADERBOARD</button>
+        </div>
+      </div>
+
       <div class="overlay modal hidden" id="leaderboardOverlay">
         <div class="overlay-card board-card">
           <div class="board-title">TOP PILOTS</div>
@@ -81,6 +101,8 @@
       <span class="controls__text" id="controlsHint">Press <kbd>P</kbd> to pause</span>
     </footer>
   </div>
+
+  <div class="sr-only" id="announcer" aria-live="polite"></div>
 
   <script src="game.js"></script>
 </body>

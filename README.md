@@ -35,7 +35,9 @@ Runs in modern browsers on Windows, macOS, Linux, Android, and iOS, on desktop, 
 - Score tracking with a persistent personal best (`localStorage`)
 - Local top-10 leaderboard — one row per pilot with their best score and date
 - Medals for score milestones and a "New Best" notice
-- Particle effects and synthesized sound effects via WebAudio
+- Particle effects, score pop-ups, milestone callouts, hit flash/shake, and WebAudio sound effects
+- On-screen pause control plus keyboard pause, with a dedicated pause menu
+- Haptic feedback on supported mobile devices and reduced-motion support
 - Gradually increasing difficulty
 - Responsive, mobile-friendly layout with high-DPI canvas rendering
 
