@@ -2,16 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#4ec0ca" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Flappy Bird" />
   <title>Flappy Bird — Web Edition</title>
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
     <header class="topbar">
       <h1>FLAPPY <span>BIRD</span></h1>
-      <p>Tap, click, or press <kbd>Space</kbd> to flap</p>
+      <p id="inputHint">Tap, click, or press <kbd>Space</kbd> to flap</p>
     </header>
 
     <div class="game-shell" id="gameShell">
@@ -26,7 +33,7 @@
             <div class="bird-icon__eye"></div>
             <div class="bird-icon__beak"></div>
           </div>
-          <p class="hint">Tap / click / <kbd>Space</kbd> to flap</p>
+          <p class="hint" id="playHint">Tap / click / <kbd>Space</kbd> to flap</p>
           <p class="hint hint--small">Fly through the pipes. Don't touch anything.</p>
           <button class="btn" id="startBtn">PLAY NOW</button>
           <button class="btn btn--ghost" id="leaderboardBtn">🏆 LEADERBOARD</button>
@@ -71,7 +78,7 @@
       <button class="icon-btn" id="soundBtn" title="Toggle sound" aria-label="Toggle sound">🔊</button>
       <span class="controls__label">Sound</span>
       <span class="divider"></span>
-      <span class="controls__text">Press <kbd>P</kbd> to pause</span>
+      <span class="controls__text" id="controlsHint">Press <kbd>P</kbd> to pause</span>
     </footer>
   </div>
 

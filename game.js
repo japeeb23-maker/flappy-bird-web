@@ -35,6 +35,9 @@
   const clearBoardBtn = document.getElementById("clearBoardBtn");
   const playerNameInput = document.getElementById("playerName");
   const rankNote = document.getElementById("rankNote");
+  const inputHint = document.getElementById("inputHint");
+  const playHint = document.getElementById("playHint");
+  const controlsHint = document.getElementById("controlsHint");
 
   function resizeCanvas() {
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
@@ -44,6 +47,29 @@
   }
   resizeCanvas();
   window.addEventListener("resize", resizeCanvas);
+  window.addEventListener("orientationchange", resizeCanvas);
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", resizeCanvas);
+
+  // Touch-first wording on phones and tablets.
+  if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) {
+    inputHint.textContent = "Tap anywhere to flap";
+    playHint.textContent = "Tap to flap";
+    controlsHint.innerHTML = "Tap 🔊 for sound";
+  }
+
+  // Pointer Events cover modern browsers; fall back for older iOS/Android WebViews.
+  function onPress(element, handler) {
+    if (window.PointerEvent) {
+      element.addEventListener("pointerdown", handler);
+      return;
+    }
+    element.addEventListener("touchstart", (e) => {
+      if (e.target.closest && e.target.closest("button, input, a")) return;
+      e.preventDefault();
+      handler({ target: e.target });
+    }, { passive: false });
+    element.addEventListener("mousedown", handler);
+  }
 
   // ---------- Audio ----------
   let audioCtx = null;
@@ -55,7 +81,19 @@
       const AC = window.AudioContext || window.webkitAudioContext;
       if (AC) audioCtx = new AC();
     }
-    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    if (!audioCtx) return;
+    if (audioCtx.state === "suspended") audioCtx.resume();
+
+    // iOS/Safari needs a silent buffer played inside a user gesture to unlock audio.
+    if (!audioCtx.__unlocked) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      gain.gain.value = 0.0001;
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(0);
+      osc.stop(audioCtx.currentTime + 0.01);
+      audioCtx.__unlocked = true;
+    }
   }
 
   function tone(freq, duration, type = "sine", volume = 0.06, slideTo = null, delay = 0) {
@@ -360,7 +398,7 @@
     latestEntryId = null;
     renderBoard();
   });
-  leaderboardOverlay.addEventListener("pointerdown", (e) => {
+  onPress(leaderboardOverlay, (e) => {
     if (e.target === leaderboardOverlay) closeBoard();
   });
 
@@ -385,9 +423,16 @@
   playerNameInput.addEventListener("change", persistPilotName);
   playerNameInput.addEventListener("blur", persistPilotName);
 
-  overlay.addEventListener("pointerdown", handleFlapInput);
-  canvas.addEventListener("pointerdown", (e) => { e.preventDefault(); handleFlapInput(e); });
+  onPress(overlay, handleFlapInput);
+  onPress(canvas, (e) => { if (e.preventDefault) e.preventDefault(); handleFlapInput(e); });
   shell.addEventListener("contextmenu", (e) => e.preventDefault());
+  document.addEventListener("contextmenu", (e) => {
+    if (e.target === canvas || shell.contains(e.target)) e.preventDefault();
+  });
+
+  // Some browsers resume audio only after any interaction, not just game start.
+  const unlockOnce = () => { ensureAudio(); window.removeEventListener("keydown", unlockOnce); };
+  window.addEventListener("keydown", unlockOnce, { once: true });
 
   window.addEventListener("keydown", (e) => {
     if (document.activeElement === playerNameInput) return;
@@ -410,12 +455,16 @@
     }
   });
 
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden && (state === "playing" || state === "dying")) {
+  function pauseWhenAway() {
+    if (state === "playing" || state === "dying") {
       prevState = state;
       state = "paused";
     }
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) pauseWhenAway();
   });
+  window.addEventListener("pagehide", pauseWhenAway);
 
   // ---------- Update ----------
   function update(dt) {

@@ -1,0 +1,30 @@
+{
+  "name": "Flappy Bird — Web Edition",
+  "short_name": "Flappy Bird",
+  "description": "A cross-platform Flappy Bird game with a local leaderboard.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#4ec0ca",
+  "theme_color": "#4ec0ca",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

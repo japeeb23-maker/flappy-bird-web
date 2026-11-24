@@ -14,6 +14,7 @@
 
 html, body {
   height: 100%;
+  overscroll-behavior: none;
 }
 
 body {
@@ -23,16 +24,27 @@ body {
   color: var(--ink);
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  overflow-x: hidden;
+  align-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  padding:
+    env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 .app {
-  width: min(100%, 520px);
-  padding: 18px 16px 26px;
+  /* Fit the board to whichever is smaller: width, height, or the max size. */
+  --game-h: min(720px, calc((100vw - 24px) * 1.5), calc(100vh - 150px));
+  --game-h: min(720px, calc((100vw - 24px) * 1.5), calc(100dvh - 150px));
+  width: 100%;
+  max-width: 520px;
+  height: 100%;
+  padding: 10px 12px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 
 .topbar {
@@ -71,8 +83,10 @@ kbd {
 
 .game-shell {
   position: relative;
-  width: 100%;
-  aspect-ratio: 2 / 3;
+  width: calc(var(--game-h) * 2 / 3);
+  height: var(--game-h);
+  max-width: 100%;
+  flex: 0 0 auto;
   border: 6px solid #fff8e7;
   border-radius: 18px;
   overflow: hidden;
@@ -80,14 +94,17 @@ kbd {
   box-shadow:
     0 10px 0 #d99a3c,
     0 18px 32px rgba(0, 0, 0, 0.35);
+  -webkit-user-select: none;
   user-select: none;
-  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  touch-action: none;
 }
 
 canvas {
   display: block;
   width: 100%;
   height: 100%;
+  touch-action: none;
 }
 
 .overlay {
@@ -99,6 +116,7 @@ canvas {
   padding: 16px;
   background: rgba(0, 0, 0, 0.12);
   transition: opacity 0.18s ease;
+  touch-action: none;
 }
 
 .overlay.hidden {
@@ -115,6 +133,10 @@ canvas {
   box-shadow: 0 8px 0 rgba(0, 0, 0, 0.22), 0 16px 30px rgba(0, 0, 0, 0.25);
   padding: 22px 18px 20px;
   text-align: center;
+  max-height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .overlay-card.hidden {
@@ -414,6 +436,8 @@ canvas {
   gap: 5px;
   max-height: 330px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   margin-bottom: 12px;
   padding-right: 2px;
 }
@@ -495,8 +519,34 @@ canvas {
   cursor: pointer;
 }
 
+/* Compact desktop windows and landscape phones. */
 @media (max-height: 800px) {
-  .topbar { margin-bottom: 8px; }
+  .topbar { margin-bottom: 6px; }
+  .topbar h1 { font-size: 22px; }
   .topbar p { display: none; }
-  .controls { margin-top: 14px; }
+  .controls { margin-top: 10px; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .app { padding-top: 4px; padding-bottom: 4px; }
+  .topbar h1 { font-size: 18px; letter-spacing: 1px; }
+  .game-shell { border-width: 4px; border-radius: 12px; box-shadow: 0 6px 0 #d99a3c; }
+  .controls { margin-top: 6px; font-size: 11px; }
+  .icon-btn { width: 32px; height: 28px; font-size: 14px; }
+  .overlay-card { padding: 12px 14px; }
+  .logo, .game-over-title, .board-title { font-size: 21px; }
+  .bird-icon { transform: scale(0.7); margin: 2px auto; }
+  .score-panel { margin: 8px 0 4px; }
+  .medal { width: 42px; height: 42px; font-size: 22px; }
+  .btn { margin-top: 8px; padding: 9px 12px; font-size: 14px; }
+  .btn--ghost { margin-top: 6px; padding: 7px 10px; }
+  .board-list { max-height: 34vh; }
+}
+
+/* Touch devices: give tap targets a little more room. */
+@media (pointer: coarse) {
+  .btn { min-height: 48px; }
+  .btn--ghost { min-height: 42px; }
+  .icon-btn { min-height: 40px; }
+  .name-row { min-height: 44px; }
 }
