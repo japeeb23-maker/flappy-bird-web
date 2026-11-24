@@ -148,42 +148,70 @@
     return (typed || saved || "PILOT").slice(0, 12);
   }
 
-  function loadBoard() {
+  function readEntries() {
     try {
       const data = JSON.parse(localStorage.getItem(LB_KEY) || "[]");
       if (!Array.isArray(data)) return [];
       return data
         .filter((e) => e && Number.isFinite(e.score))
         .map((e) => ({
-          id: String(e.id || Date.now()),
-          name: String(e.name || "PILOT").slice(0, 12),
+          id: String(e.id || Date.now()) + "-" + Math.floor(Math.random() * 10000),
+          name: String(e.name || "PILOT").trim().toUpperCase().slice(0, 12) || "PILOT",
           score: Math.max(0, Math.floor(e.score)),
           date: Number(e.date) || Date.now()
-        }))
-        .sort((a, b) => b.score - a.score || a.date - b.date)
-        .slice(0, MAX_ENTRIES);
+        }));
     } catch (_) {
       return [];
     }
   }
 
+  // One row per pilot, keeping only that pilot's best score.
+  function dedupeEntries(entries) {
+    const byName = new Map();
+    for (const entry of entries) {
+      const current = byName.get(entry.name);
+      if (!current || entry.score > current.score ||
+          (entry.score === current.score && entry.date < current.date)) {
+        byName.set(entry.name, entry);
+      }
+    }
+    return Array.from(byName.values())
+      .sort((a, b) => b.score - a.score || a.date - b.date)
+      .slice(0, MAX_ENTRIES);
+  }
+
+  function loadBoard() {
+    return dedupeEntries(readEntries());
+  }
+
   function saveBoard(entries) {
-    try { localStorage.setItem(LB_KEY, JSON.stringify(entries)); } catch (_) {}
+    try { localStorage.setItem(LB_KEY, JSON.stringify(dedupeEntries(entries))); } catch (_) {}
   }
 
   function addScore(value) {
-    const entry = {
-      id: String(Date.now()) + "-" + Math.floor(Math.random() * 10000),
-      name: getPilotName(),
-      score: value,
-      date: Date.now()
-    };
-    const entries = loadBoard();
-    entries.push(entry);
-    entries.sort((a, b) => b.score - a.score || a.date - b.date);
-    saveBoard(entries.slice(0, MAX_ENTRIES));
-    latestEntryId = entry.id;
-    return { rank: entries.findIndex((e) => e.id === entry.id) + 1 };
+    const name = getPilotName();
+    const entries = readEntries();
+    const existing = entries.find((e) => e.name === name);
+    let id;
+    let improved = true;
+
+    if (existing) {
+      id = existing.id;
+      improved = value > existing.score;
+      if (improved) {
+        existing.score = value;
+        existing.date = Date.now();
+      }
+    } else {
+      id = String(Date.now()) + "-" + Math.floor(Math.random() * 10000);
+      entries.push({ id, name, score: value, date: Date.now() });
+    }
+
+    const board = dedupeEntries(entries);
+    saveBoard(board);
+    latestEntryId = id;
+    const rank = board.findIndex((e) => e.id === id) + 1;
+    return { rank, improved, madeBoard: rank > 0 && rank <= MAX_ENTRIES };
   }
 
   function renderBoard() {
@@ -337,9 +365,9 @@
     medalEl.textContent = icon;
 
     if (score > 0) {
-      const { rank: boardRank } = addScore(score);
-      if (boardRank <= MAX_ENTRIES) {
-        rankNote.textContent = `🏆 Leaderboard rank #${boardRank}`;
+      const result = addScore(score);
+      if (result.improved && result.madeBoard) {
+        rankNote.textContent = `🏆 Leaderboard rank #${result.rank}`;
         rankNote.hidden = false;
       } else {
         rankNote.hidden = true;
@@ -410,15 +438,28 @@
       else localStorage.removeItem(NAME_KEY);
     } catch (_) {}
 
-    // Rename the score from the run that is currently being displayed.
-    if (latestEntryId) {
-      const entries = loadBoard();
-      let changed = false;
-      for (const e of entries) {
-        if (e.id === latestEntryId) { e.name = name || "PILOT"; changed = true; }
+    // Rename the last run's score, merging if that pilot already exists.
+    if (!latestEntryId) return;
+    const entries = readEntries();
+    const target = entries.find((e) => e.id === latestEntryId);
+    if (!target) return;
+
+    const newName = name || "PILOT";
+    const duplicate = entries.find((e) => e.id !== target.id && e.name === newName);
+    if (duplicate) {
+      if (target.score > duplicate.score ||
+          (target.score === duplicate.score && target.date < duplicate.date)) {
+        duplicate.score = target.score;
+        duplicate.date = target.date;
+        duplicate.name = newName;
+        latestEntryId = duplicate.id;
       }
-      if (changed) saveBoard(entries);
+      const index = entries.indexOf(target);
+      if (index !== -1) entries.splice(index, 1);
+    } else {
+      target.name = newName;
     }
+    saveBoard(entries);
   }
   playerNameInput.addEventListener("change", persistPilotName);
   playerNameInput.addEventListener("blur", persistPilotName);

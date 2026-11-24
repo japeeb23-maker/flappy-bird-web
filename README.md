@@ -33,7 +33,7 @@ Runs in modern browsers on Windows, macOS, Linux, Android, and iOS, on desktop, 
 
 - Parallax background, scrolling ground, animated bird and pipes
 - Score tracking with a persistent personal best (`localStorage`)
-- Local top-10 leaderboard with pilot names and dates
+- Local top-10 leaderboard — one row per pilot with their best score and date
 - Medals for score milestones and a "New Best" notice
 - Particle effects and synthesized sound effects via WebAudio
 - Gradually increasing difficulty
